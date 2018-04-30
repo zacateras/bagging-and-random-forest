@@ -25,6 +25,7 @@ Accuracy <- function(factual, predicted){
   #confusionMatrix(t)
 }
 
+k=10
 N=2
 mydata=read.csv(".\\credit_card_clients.csv", header=TRUE, sep=";")
 
@@ -53,8 +54,10 @@ for (i in 1:N){
   trainingSet <- mydata[sampleIdx, ]
   testSet <- mydata[-sampleIdx, ]
   
-  tree <- rpart(DEFAULT_PAY ~ .-DEFAULT_PAY, trainingSet)
-  
+  randomArguments <- sample(ncol(trainingSet)-1, k)
+  formula <- as.formula( c("DEFAULT_PAY ~", paste( colnames(trainingSet)[randomArguments] , collapse='+' )))
+  tree <- rpart( formula, trainingSet)
+
   #probability <- predict(tree, newdata = testSet)
   prediction <- predict(object=tree,  type = "class", newdata = testSet)
   
