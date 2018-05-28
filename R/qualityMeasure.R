@@ -1,24 +1,24 @@
-F1Score <- function(factual, predicted) {
+F1Score <- function(y_true, y_pred) {
   
-  TP = sum(predicted %in% factual)
+  TP = sum(y_pred %in% y_true)
   
   if(TP == 0) {
     return(0)
   }
   
-  precision <- TP/length(predicted)
-  recall <- TP/length(factual)
+  precision <- TP/length(y_pred)
+  recall <- TP/length(y_true)
   
   2 * precision * recall / (precision + recall)
 }
 
-Accuracy <- function(factual, predicted){
-  length( predicted[ predicted== factual ]) / length( predicted )
+Accuracy <- function(y_true, y_pred) {
+  length(y_pred[y_pred==y_true]) / length(y_pred)
 }
 
-MeasureQuality <- function(factual, predicted){
-  accuracy <- Accuracy(factual, predicted)
-  fscore  <- F1Score(factual, predicted )
+MeasureQuality <- function(y_true, y_pred) {
+  accuracy <- Accuracy(y_true, y_pred)
+  fscore  <- F1Score(y_true, y_pred)
   accuracy 
   fscore
 }
