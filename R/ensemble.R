@@ -1,11 +1,13 @@
 set.seed(1234)
 
 ensemble <- function(model, nsets, mset, nfeatures, ycolname, data) {
-  fit <- NULL
+  
+  ans <- list(submodels=list())
+  class(ans) <- 'ensemble'
 
-  for (i in nsets) {
+  for (i in 1:nsets) {
     # random sample
-    smpl_size <- floor(mset * nrow(data))
+    smpl_size <- floor(mset) # mset < nrow(data)
     smpl_i <- sample(seq_len(nrow(data)), size=smpl_size, replace=TRUE)
     smpl <- data[smpl_i, ]
 
@@ -15,12 +17,12 @@ ensemble <- function(model, nsets, mset, nfeatures, ycolname, data) {
     xcolnames <- xcolnames[sample(seq_len(length(xcolnames)), size=nfeatures)]
     formula <- as.formula(paste(ycolname, '~', paste(xcolnames, collapse="+")))
 
-    fit <- c(fit, model(formula, smpl))
+    ans$submodels[[i]] <- model(formula, smpl)
   }
 
-  return(fit)
+  return(ans)
 }
 
-ensemble.predict <- function(object, newdata) {
-  # TODO
+predict.ensemble <- function(object, newdata) {
+  return('TODO')
 }
