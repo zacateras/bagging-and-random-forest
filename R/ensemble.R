@@ -17,7 +17,10 @@ ensemble <- function(model, nsets, mset, nfeatures, ycolname, data) {
     xcolnames <- xcolnames[sample(seq_len(length(xcolnames)), size=nfeatures)]
     formula <- as.formula(paste(ycolname, '~', paste(xcolnames, collapse="+")))
 
-    ans$submodels[[i]] <- model(formula, smpl)
+    ans$submodels[[i]] <- list(
+      formula=formula,
+      model=model(formula, smpl)
+    )
   }
 
   return(ans)
