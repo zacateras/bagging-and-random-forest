@@ -1,5 +1,3 @@
-set.seed(1234)
-
 ensemble <- function(model, nsets, mset, nfeatures, ycolname, data) {
   
   ans <- list(submodels=list())
@@ -15,7 +13,7 @@ ensemble <- function(model, nsets, mset, nfeatures, ycolname, data) {
     xcolnames <- colnames(data)
     xcolnames <- xcolnames[xcolnames != ycolname]
     xcolnames <- xcolnames[sample(seq_len(length(xcolnames)), size=nfeatures)]
-    formula <- as.formula(paste(ycolname, '~', paste(xcolnames, collapse="+")))
+    formula <- as.formula(paste(ycolname, '~', paste(xcolnames, collapse='+')))
 
     ans$submodels[[i]] <- list(
       formula=formula,
@@ -24,8 +22,4 @@ ensemble <- function(model, nsets, mset, nfeatures, ycolname, data) {
   }
 
   return(ans)
-}
-
-predict.ensemble <- function(object, newdata) {
-  return('TODO')
 }
