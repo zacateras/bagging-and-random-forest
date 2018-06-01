@@ -1,4 +1,4 @@
-train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, ycolname,
+train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, ycolname, nrep=10,
                                     bag_nsets=c(1, 3, 10, 30, 100), bag_mset=c(100, 1000, 10000, 100000), bag_nfeatures=c(2, 3, 5, 7)) {
 
   log_file <- paste(c('log/', df_name, '.log'), collapse='')
@@ -21,25 +21,44 @@ train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, yc
         if (key_string %in% log_key_strings) {
           next
         }
+
+        train_time <- 0
+        test_time <- 0
+        accuracy <- 0
+        accuracy_nan <- 0
+        f1_score <- 0
+        f1_score_nan <- 0
   
-        print(paste('Training classifier', key_string, '...'))
-        train_time <- system.time({
-          classifier <- ensemble(
-            submodel_fun,
-            nsets=nsets,
-            mset=mset,
-            nfeatures=nfeatures,
-            ycolname="Cover_Type",
-            data=train)
-        })
+        for (i in 1:nrep) {
+          print(paste('Training classifier ', key_string, ' (', i, '/', nrep, ')...', collapse=''))
+          train_time <- train_time + system.time({
+            classifier <- ensemble(
+              submodel_fun,
+              nsets=nsets,
+              mset=mset,
+              nfeatures=nfeatures,
+              ycolname=ycolname,
+              data=train)
+          })[['user.self']]
   
-        print(paste('Testing classifier', key_string, '...'))
-        test_time <- system.time({
-          predictions <- predict(classifier, test)
-        })
+          print(paste('Testing classifier', key_string, ' (', i, '/', nrep, ')...', collapse=''))
+          test_time <- test_time + system.time({
+            predictions <- predict(classifier, test)
+          })[['user.self']]
   
-        accuracy <- Accuracy(test$Cover_Type, predictions)
-        f1_score <- F1_Score(test$Cover_Type, predictions)
+          accuracy_i <- Accuracy(test[[ycolname]], predictions)
+          if (!is.nan(accuracy_i)) accuracy <- accuracy + accuracy_i
+          else accuracy_nan <- accuracy_nan + 1
+
+          f1_score_i <- F1_Score(test[[ycolname]], predictions)
+          if (!is.nan(f1_score_i)) f1_score <- f1_score + f1_score_i
+          else f1_score_nan <- f1_score_nan + 1
+        }
+
+        train_time <- train_time / nrep
+        test_time <- test_time / nrep
+        accuracy <- accuracy / (nrep - accuracy_nan)
+        f1_score <- f1_score / (nrep - f1_score_nan)
 
         print(paste(c('Accuracy: ', accuracy, ', F1 score: ', f1_score), collapse=''))
         print('Saving...')
@@ -52,8 +71,8 @@ train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, yc
             nsets=nsets,
             mset=mset,
             nfeatures=nfeatures,
-            train_time=train_time[['user.self']],
-            test_time=test_time[['user.self']],
+            train_time=train_time,
+            test_time=test_time,
             accuracy=accuracy,
             f1_score=f1_score),
           file=log_file, append=TRUE, quote=FALSE, sep='|', col.names=FALSE, row.names=FALSE)
