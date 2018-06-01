@@ -1,8 +1,11 @@
 ---
 title: "MOW - REPORT"
-subtitle: "Ensemble model - applying any classification algorithm to bootstrap samples from a training set with randomly selected subset of attributes."
-author: Michał Sitko, Martyna Kania
-output: html_notebook
+author: "Michał Sitko, Martyna Kania"
+subtitle: Ensemble model - applying any classification algorithm to bootstrap samples
+  from a training set with randomly selected subset of attributes.
+output:
+  html_document:
+    df_print: paged
 ---
 
 ### Introduction
@@ -71,19 +74,46 @@ source('./R/datasets/letter-recognition.R')
 
 set.seed(1234)
 
-df <- load_lr_df()
+train_and_test_set <- function(df, df_name, ycolname) {
+  # rpart
+  rpart_fun <- function(formula, data) rpart(formula, data=data)
+  train_and_test_ensemble(df, df_name, rpart_fun, 'rpart', ycolname)
+  
+  # more complex
+  rpart_cms10_ccp1_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=10, cp=1))
+  train_and_test_ensemble(df, df_name, rpart_cms10_ccp1_fun, 'rpart_cms10_ccp1', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  
+  # less complex
+  rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=30, cp=0.001, maxdepth=15))
+  train_and_test_ensemble(df, df_name, rpart_cms30_ccp0.001_cmd15_fun, 'rpart_cms30_ccp0.001_cmd15', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  
+  # naiveBayes
+  naiveBayes_fun <- function(formula, data) naiveBayes(formula, data=data)
+  train_and_test_ensemble(df, df_name, naiveBayes_fun, 'naivebayes', ycolname)
+  
+  # natural Laplace smoothing
+  naiveBayes_l1_fun <- function(formula, data) naiveBayes(formula, data=data, laplace=1.0)
+  train_and_test_ensemble(df, df_name, naiveBayes_l1_fun, 'naivebayes_l1', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  
+  # Laplace smoothing with higher alpha
+  naiveBayes_l10_fun <- function(formula, data) naiveBayes(formula, data=data, laplace=10.0)
+  train_and_test_ensemble(df, df_name, naiveBayes_l10_fun, 'naivebayes_l10', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  
+  # TODO add complex models: randomforest, bagging
+}
 
-# check datatypes
-sapply(df, class)
+# letter recognition
+lr_df <- load_lr_df()
+sapply(lr_df, class)
+summary(lr_df)
+train_and_test_set(lr_df, 'lr', 'lettr')
 
-# summary
-summary(df)
+# default of credit card clients
+dccc_df <- load_dccc_df()
+sapply(dccc_df, class)
+summary(dccc_df)
+train_and_test_set(dccc_df, 'dccc', 'DEFAULT_PAY')
 
-rpart_fun <- function(formula, data) rpart(formula, data=data)
-naiveBayes_fun <- function(formula, data) naiveBayes(formula, data=data)
-
-train_and_test_ensemble(df, 'lr', rpart_fun, 'rpart', 'lettr')
-train_and_test_ensemble(df, 'lr', naiveBayes_fun, 'naivebayes', 'lettr')
 ```
 
 ### References
@@ -95,7 +125,10 @@ https://www.youtube.com/watch?v=Un9zObFjBH0
 https://www.youtube.com/watch?v=2Mg8QD0F1dQ
 * Bagging
 https://www.youtube.com/watch?v=sVriC_Ys2cw
-* Recursive Partitioning
-https://en.wikipedia.org/wiki/Recursive_partitioning 
 * Random Forest
 https://en.wikipedia.org/wiki/Random_forest 
+* Recursive Partitioning
+** https://en.wikipedia.org/wiki/Recursive_partitioning
+** https://cran.r-project.org/web/packages/rpart/rpart.pdf#rpart
+* Naive Bayes
+** https://cran.r-project.org/web/packages/e1071/e1071.pdf#naiveBayes

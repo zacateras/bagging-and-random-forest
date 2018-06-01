@@ -32,5 +32,5 @@ load_cr_df <- function() {
     'Cover_Type'
   )
 
-  return (df)
+  return(df)
 }
