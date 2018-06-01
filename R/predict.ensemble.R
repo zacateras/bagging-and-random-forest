@@ -26,5 +26,8 @@ predict.ensemble <- function(object, newdata, type=c('class')) {
     # TODO add more supported types
   } else stop('Unsupported type for \"ensemble\" object')
 
+  # TODO apply for categorical data only
+  res <- factor(res, levels=object$levels)
+
   return(res)
 }

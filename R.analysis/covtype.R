@@ -2,19 +2,22 @@
 # install.packages('rpart')
 # install.packages('e1071')
 # install.packages('onehot')
+# install.packages('MLmetrics')
 
 library('caret')
 library('rpart')
 library('e1071')
 library('onehot')
+library('MLmetrics')
 
 source('./R/ensemble.R')
 source('./R/predict.ensemble.R')
-source('./R/qualityMeasure.R')
+
+source('./R.analysis/tooling.R')
 
 set.seed(1234)
 
-df = data.frame(read.csv('data/covtype.data', head=FALSE, sep=','))
+df <- data.frame(read.csv('data/covtype.data', head=FALSE, sep=','))
 
 # categorize one-hot encoded features
 for (i in 2:4) { df[['V11']] <- df[['V11']] + (i * df[[paste0('V', 11 + (i - 1))]]) }
@@ -53,17 +56,7 @@ sapply(df, class)
 # summary
 summary(df)
 
-train_size <- floor(.8 * nrow(df))
-train_i <- sample(seq_len(nrow(df)), size=train_size)
-
-train <- df[train_i, ]
-test <- df[-train_i, ]
-
 rpart_fun <- function(formula, data) rpart(formula, data=data)
 naiveBayes_fun <- function(formula, data) naiveBayes(formula, data=data)
 
-classifier_1 <- ensemble(rpart_fun, nsets=3, mset=100, nfeatures=8, ycolname="Cover_Type", data=train)
-classifier_2 <- ensemble(naiveBayes_fun, nsets=3, mset=100, nfeatures=5, ycolname="Cover_Type", data=train)
-
-predict(classifier_1, test)
-predict(classifier_2, test)
+Train_And_Test_Ensemble(df, 'covtype', rpart_fun, 'rpart', 'Cover_Type')

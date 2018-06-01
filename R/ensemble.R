@@ -3,6 +3,10 @@ ensemble <- function(model, nsets, mset, nfeatures, ycolname, data) {
   ans <- list(submodels=list())
   class(ans) <- 'ensemble'
 
+  # save ycolname levels
+  # TODO apply for categorical data only
+  ans$levels <- sort(unique(data[[ycolname]]))
+
   for (i in 1:nsets) {
     # random sample
     smpl_size <- floor(mset) # mset < nrow(data)
