@@ -114,6 +114,12 @@ sapply(dccc_df, class)
 summary(dccc_df)
 train_and_test_set(dccc_df, 'dccc', 'DEFAULT_PAY')
 
+# forest cover type
+covtype_df <- load_cr_df()
+sapply(covtype_df, class)
+summary(covtype_df)
+train_and_test_set(covtype_df, 'covtype', 'Cover_Type')
+
 ```
 
 ### References
