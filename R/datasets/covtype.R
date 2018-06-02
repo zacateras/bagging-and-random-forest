@@ -32,5 +32,7 @@ load_cr_df <- function() {
     'Cover_Type'
   )
 
-  return(df)
+  size_limit <- 50000
+
+  return(df[sample(seq_len(nrow(df)), size=size_limit),])
 }
