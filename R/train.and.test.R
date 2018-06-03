@@ -1,6 +1,8 @@
-train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, ycolname, nrep=10,
+train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, ycolname, nrep=10, 
                                     bag_nsets=c(1, 3, 10, 30, 100), bag_mset=c(100, 1000, 10000), bag_nfeatures=c(2, 3, 5, 7)) {
-
+  source('./R/ensemble.R')
+  source('./R/predict.ensemble.R')
+  
   log_file <- paste(c('log/', df_name, '.log'), collapse='')
   log_items <- read.table(log_file, header=FALSE, sep='|',
                           col.names=c('df_name', 'submodel_name', 'nsets', 'mset', 'nfeatures', 'train_time', 'test_time', 'accuracy', 'f1_score'))
