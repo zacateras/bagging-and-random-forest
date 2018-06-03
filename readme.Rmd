@@ -85,7 +85,7 @@ train_and_test_set <- function(df, df_name, ycolname) {
   
   # less complex
   rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=30, cp=0.001, maxdepth=15))
-  train_and_test_ensemble(df, df_name, rpart_cms30_ccp0.001_cmd15_fun, 'rpart_cms30_ccp0.001_cmd15', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  train_and_test_ensemble(df, df_name, rpart_cms30_ccp0.001_cmd15_fun, 'rpart_cms30_ccp0001_cmd15', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
   
   # naiveBayes
   naiveBayes_fun <- function(formula, data) naiveBayes(formula, data=data)
@@ -120,6 +120,21 @@ sapply(covtype_df, class)
 summary(covtype_df)
 train_and_test_set(covtype_df, 'covtype', 'Cover_Type')
 
+```
+
+```{r}
+# install.packages('tidyverse')
+# install.packages('dplyr')
+library('tidyverse')
+library('dplyr')
+
+# concat all logs
+log_filenames <- dir('log') %>% map(function(f) paste0('log/', f))
+log_colnames <- c('df_name', 'submodel_name', 'nsets', 'mset', 'nfeatures', 'train_time', 'test_time', 'accuracy', 'f1_score')
+log_df <- do.call(rbind, lapply(log_filenames, function(f) read.table(f, header = FALSE, sep = '|', col.names = log_colnames)))
+
+# overall accuracy and f1_score for each model
+log_df %>% group_by(submodel_name) %>% summarise(train_time = mean(train_time), test_time = mean(test_time), accuracy = mean(accuracy), f1_score = mean(f1_score)) %>% arrange(desc(f1_score))
 ```
 
 ### References
