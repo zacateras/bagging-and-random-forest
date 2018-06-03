@@ -33,7 +33,7 @@ load_dccc_df <- function() {
   df$EDUCATION <- factor(df$EDUCATION, labels=c("graduate school", "university", "high school", "other1", "other2", "other3", "other4"))
   df$MARRIAGE <- factor(df$MARRIAGE, labels=c("married", "single", "other1", "other2"))
   df$DEFAULT_PAY <- factor(df$DEFAULT_PAY)
-  df[,6:11] <- lapply(df[,6:11], as.factor)
+  df[,7:12] <- lapply(df[,7:12], as.factor)
 
   return(df)
 }
