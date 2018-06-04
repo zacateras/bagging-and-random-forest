@@ -1,4 +1,7 @@
-library("shiny")
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
 
 lr <- data.frame(read.csv('log/lr.log', header=FALSE, sep='|'))
 dccc <- data.frame(read.csv('log/dccc.log', header=FALSE, sep='|'))
@@ -30,9 +33,6 @@ letter_recognition <-  lr$accuracy
 default_detection <-  dccc$accuracy
 df = data.frame(nfeatures, letter_recognition, default_detection)
 
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-
 dfplot <- df %>% gather(key, value, -nfeatures)
 ggplot(dfplot , mapping = aes(x = nfeatures, y = value, color = key) ) + geom_line()
+p + labs( y = "accuracy", title = "bootstrap replications: 1000, features drawn: 7", x = "model count")
