@@ -1,4 +1,4 @@
-train_and_test_forest <- function(df, df_name, ycolname, nrep=10, model_ntree=c(1, 200, 500, 700), model_mset=c(100, 1000, 10000), model_nfeatures=c(2, 3, 5, 7), model_replace=c(0,1), model_node_size=c(1,5,10)) {
+train_and_test_forest <- function(df, df_name, ycolname, nrep=10, model_ntree=c(1, 200, 500, 700), model_mset=c(100, 1000, 10000), model_nfeatures=c(2, 5, 7), model_replace=c(0,1), model_node_size=c(1,50)) {
   library('randomForest')
   log_file <- paste(c('log/', df_name, '.log'), collapse='')
   log_items <- read.table(log_file, header=FALSE, sep='|',
@@ -47,7 +47,7 @@ train_and_test_forest <- function(df, df_name, ycolname, nrep=10, model_ntree=c(
               
               print(paste('Testing classifier', key_string, ' (', i, '/', nrep, ')...', collapse=''))
               test_time <- test_time + system.time({
-                predictions <- predict(classifier, test)
+                predictions <- predict(classifier, test[,xcolnames])
               })[['user.self']]
               
               accuracy_i <- Accuracy(test[[ycolname]], predictions)
