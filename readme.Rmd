@@ -53,7 +53,7 @@ Suppose that we will have our data cleaned and all our algorithms trained, we wi
 * F1-score - harmonic mean of precission and recall values of a classifier from the interval of [0, 1], where 0 means the worst classifier and 1 means the best (in terms of precission and recall). We can consider calculating it with an external package such as MLmetrics, just for simplicity.
 
 ### Experiments
-Let's start experiments section with loading necessary external libraries announced in the proceeding sections:
+We will start experiments section with loading necessary external libraries announced in the proceeding sections:
 ```{r Load external dependencies}
 # install.packages('caret')
 # install.packages('rpart')
@@ -95,14 +95,14 @@ source('./R/predict.ensemble.R')
 source('./R/onehot.encode.R')
 ```
 
-Soon after, the scripts for cleaning and loading experimental data sets should be loaded. Since we are using models which are not affected by unnormalized data normalization process is not performed by the scripts.
+Soon after, the scripts for cleaning and loading experimental, data sets should be loaded. Since we are using models which are not affected by unnormalized data - normalization process is not performed by the scripts.
 ```{r Load datasets sources }
 source('./R/datasets/covtype.R')
 source('./R/datasets/default-of-credit-card-clients.R')
 source('./R/datasets/letter-recognition.R')
 ```
 
-In order to ease experience of executing our model for different sets of parameters we prepared a function which can be parametrized with sets of parameters for executing the **training function**, then it prepares a cross product of all sets, trains the model for every configuration and logs results to the *logs* directory. For each configuration the following metadata is logged:
+In order to ease experience of executing our model for different sets of parameters we prepared a function which can be parametrized with sets of parameters for executing the **training function**, then it prepares a cross product of all sets, trains the model **ten times** for every configuration and logs averaged results to the *logs* directory. For each configuration the following metadata is logged:
 
 * training execution time,
 * testing execution time,
@@ -115,7 +115,7 @@ Based on those statistics we will try to asses how well each model performs and 
 source('./R/train.and.test.R')
 ```
 
-Let's prepare now a function which will use the above described mechanism for a set of choosen simple model configurations.
+Next we will prepare a function which uses the mechanism for a set of choosen simple model configurations described above.
 We decided to try three rpart-based (*standard*, *complex*, *simple*) and three naiveBayes-based ensemble classifiers (*standard*, *1.0 Laplace smoothing*, *10.0 Laplace smoothing*).
 
 ```{r Train & Test ensemble models for data set}
@@ -156,7 +156,7 @@ train_and_test_ensemble <- function(df, df_name, ycolname) {
   
   # naiveBayes
   naiveBayes_fun <- function(formula, data)
-    naiveBayes(formula, data=data)
+    naiveBayes(formula, data = data)
   train_and_test(df, df_name, ycolname,
                  'naivebayes', classifier_funct, naiveBayes_fun) 
   
@@ -169,25 +169,14 @@ train_and_test_ensemble <- function(df, df_name, ycolname) {
   
   # Laplace smoothing with higher alpha
   naiveBayes_l10_fun <- function(formula, data)
-    naiveBayes(formula, data=data, laplace=10.0)
+    naiveBayes(formula, data = data, laplace = 10.0)
   train_and_test(df, df_name, ycolname,
                  'naivebayes_l10', classifier_funct, naiveBayes_l10_fun,
                  model_nset = c(10, 100), model_nfeatures = c(3, 7))
 }
 ```
 
-```{r Train & Test bagging models for data set}
-train_and_test_bagging <- function(df, df_name, ycolname) {
-  classifier_funct <- function(data, nsets, mset, nfeatures,
-                               ycolname, xcolnames, formula,
-                               submodel_funct) {
-    bagging(data = data, formula = formula,
-            nbagg = nsets, ns = mset)
-  }
-  
-  train_and_test(df, df_name, ycolname, 'bagging', classifier_funct)
-}
-```
+We will also need a similar function for randomForest. Apart from the standard version we will try to test: an overriden value for nodesize and turn sampling with replacement on.
 
 ```{r Train & Test randomForest models for data set}
 train_and_test_randomforest <- function(df, df_name, ycolname, rpart_funct) {
@@ -228,34 +217,59 @@ train_and_test_randomforest <- function(df, df_name, ycolname, rpart_funct) {
 }
 ```
 
-```{r Letter recognition}
+And the same for bagging...
+
+```{r Train & Test bagging models for data set}
+train_and_test_bagging <- function(df, df_name, ycolname) {
+  classifier_funct <- function(data, nsets, mset, nfeatures,
+                               ycolname, xcolnames, formula,
+                               submodel_funct) {
+    bagging(data = data, formula = formula,
+            nbagg = nsets, ns = mset)
+  }
+  
+  train_and_test(df, df_name, ycolname, 'bagging', classifier_funct)
+}
+```
+
+Now, let's load datasets and execute prepared functions.
+
+###### Letter recognition (LR)
+```{r Letter recognition, eval=FALSE}
 lr_df <- load_lr_df()
 sapply(lr_df, class)
 summary(lr_df)
-# train_and_test_ensemble(lr_df, 'lr', 'lettr')
-# train_and_test_bagging(lr_df, 'lr', 'lettr')
-# train_and_test_randomforest(lr_df, 'lr', 'lettr')
+
+train_and_test_ensemble(lr_df, 'lr', 'lettr')
+train_and_test_bagging(lr_df, 'lr', 'lettr')
+train_and_test_randomforest(lr_df, 'lr', 'lettr')
 ```
 
-```{r Default of credit card clients}
+###### Default of credit card clients (DCCC)
+```{r Default of credit card clients, eval=FALSE}
 dccc_df <- load_dccc_df()
 sapply(dccc_df, class)
 summary(dccc_df)
-# train_and_test_ensemble(dccc_df, 'dccc', 'DEFAULT_PAY')
-# train_and_test_bagging(dccc_df, 'dccc', 'DEFAULT_PAY')
-# train_and_test_randomforest(dccc_df, 'dccc', 'DEFAULT_PAY')
+
+train_and_test_ensemble(dccc_df, 'dccc', 'DEFAULT_PAY')
+train_and_test_bagging(dccc_df, 'dccc', 'DEFAULT_PAY')
+train_and_test_randomforest(dccc_df, 'dccc', 'DEFAULT_PAY')
 ```
 
-```{r Cover types}
+###### Cover types (CT)
+```{r Cover types, eval=FALSE}
 covtype_df <- load_cr_df()
 sapply(covtype_df, class)
 summary(covtype_df)
-# train_and_test_ensemble(covtype_df, 'covtype', 'Cover_Type')
-# train_and_test_bagging(covtype_df, 'covtype', 'Cover_Type')
-# train_and_test_randomforest(covtype_df, 'covtype', 'Cover_Type')
+
+train_and_test_ensemble(covtype_df, 'covtype', 'Cover_Type')
+train_and_test_bagging(covtype_df, 'covtype', 'Cover_Type')
+train_and_test_randomforest(covtype_df, 'covtype', 'Cover_Type')
 ```
 
-```{r Load logs}
+### Summary
+Since *train and test* results are already logged we can proceed with analysis. We will start with loading the essential visualization and data processing libraries. We will also load and concatenate all logs into one dataframe.
+```{r Load logs, results=FALSE}
 # install.packages('tidyverse')
 # install.packages('dplyr')
 library('tidyverse')
@@ -263,14 +277,40 @@ library('dplyr')
 
 # concat all logs
 log_filenames <- dir('log') %>% map(function(f) paste0('log/', f))
-log_colnames <- c('df_name', 'submodel_name', 'nsets', 'mset', 'nfeatures', 'train_time', 'test_time', 'accuracy', 'f1_score')
-log_df <- do.call(rbind, lapply(log_filenames, function(f) read.table(f, header = FALSE, sep = '|', col.names = log_colnames)))
+log_colnames <- c('df_name', 'submodel_name', 'nsets', 'mset', 'nfeatures',
+                  'train_time', 'test_time', 'accuracy', 'f1_score')
+log_df <- do.call(rbind, lapply(log_filenames, function(f)
+  read.table(f, header = FALSE, sep = '|', col.names = log_colnames))) %>% data.frame()
 ```
 
+##### Overall
+The following table presents the best models sorted in descending manner by their F1 score averaged over all configurations and all data sets. 
 ```{r Overall accuracy and f1_score for each model}
-# overall accuracy and f1_score for each model
-log_df %>% group_by(submodel_name) %>% summarise(train_time = mean(train_time), test_time = mean(test_time), accuracy = mean(accuracy), f1_score = mean(f1_score)) %>% arrange(desc(f1_score))
+log_df_agg <- log_df
+log_df_agg[str_detect(log_df_agg$submodel_name, 'bagging'),]$submodel_name <- 'bagging'
+log_df_agg[str_detect(log_df_agg$submodel_name, 'randomForest'),]$submodel_name <- 'randomForest'
+log_df_agg[str_detect(log_df_agg$submodel_name, 'naivebayes'),]$submodel_name <- 'naivebayes'
+log_df_agg[str_detect(log_df_agg$submodel_name, 'rpart'),]$submodel_name <- 'rpart'
+log_df_agg %>% group_by(submodel_name) %>% summarise(train_time = mean(train_time), test_time = mean(test_time), accuracy = mean(accuracy), f1_score = mean(f1_score)) %>% arrange(desc(f1_score))
 ```
+It seams that our ensemble model is not better than native implementations of *randomForest* and *rpart* in terms of accuracy and F1 score.
+Noticable difference between training and testing times for *naivebayes* and *rpart* should be pointed here. Interestingly despite the fact that *rpart* was trained much longer it yealds worse scores.
+
+However such aggregated results can quickly estimate general performance of the models over huge space of different configurations it can be very misleading. It can happen that only a few configurations of ensemble worsen the overal score. Let's try to get a bit deeper into generated meta data and try to find any applications where our implementation can be considered better than the baseline.
+
+How about considering the DCCC set only?
+```{r Dccc accuracy and f1_score for each model, collapse=TRUE}
+log_df_agg <- log_df[log_df$df_name == 'dccc',]
+log_df_agg[str_detect(log_df_agg$submodel_name, 'bagging'),]$submodel_name <- 'bagging'
+log_df_agg[str_detect(log_df_agg$submodel_name, 'randomForest'),]$submodel_name <- 'randomForest'
+log_df_agg[str_detect(log_df_agg$submodel_name, 'naivebayes'),]$submodel_name <- 'naivebayes'
+log_df_agg[str_detect(log_df_agg$submodel_name, 'rpart'),]$submodel_name <- 'rpart'
+log_df_agg %>% group_by(submodel_name) %>% summarise(train_time = mean(train_time), test_time = mean(test_time), accuracy = mean(accuracy), f1_score = mean(f1_score)) %>% arrange(desc(f1_score))
+```
+
+The performance gap seems to be significantly lower than in the previous example. rpart ensemble seems to be performing surprisingly good for credit card defaults data.
+
+##### Details
 
 ### References
 
