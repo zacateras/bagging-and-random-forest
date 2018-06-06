@@ -6,7 +6,13 @@ subtitle: Ensemble model - applying any classification algorithm to bootstrap sa
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
+
+```{r Initialize cache & seed, echo=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+set.seed(1234)
+```
 
 ### Introduction
 The purpose of this report is to summarize research that we did, the implementation that we committed and the tests that we performed as part of a MOW 2018L course project.
@@ -47,7 +53,8 @@ Suppose that we will have our data cleaned and all our algorithms trained, we wi
 * F1-score - harmonic mean of precission and recall values of a classifier from the interval of [0, 1], where 0 means the worst classifier and 1 means the best (in terms of precission and recall). We can consider calculating it with an external package such as MLmetrics, just for simplicity.
 
 ### Experiments
-```{r}
+Let's start experiments section with loading necessary external libraries announced in the proceeding sections:
+```{r Load external dependencies}
 # install.packages('caret')
 # install.packages('rpart')
 # install.packages('e1071')
@@ -57,72 +64,137 @@ library('caret')
 library('rpart')
 library('e1071')
 library('MLmetrics')
+```
 
-# turn off scientific notation
+We experienced some issues with R, enforcing scientific notation, therefore we globally turn it off:
+```{r Turning off scientific notation}
 options(scipen = 999)
+```
 
-# load ensemble sources
+Now, let's load our scripts for preparing an ensemble classifier, making ensemble predictions and automating training/testing procedure.
+Inspired by public implementations of popular classification algorithms we decided to split the interface into training and prediction parts.
+Also we tried to design as usable interface as it was possible...
+
+The **training function** expects to be parametrized with:
+
+* a pointer to submodel function wrapper *(model)*,
+* number of ensemble *submodel* classifier copies *(nsets)*,
+* number of samples choosen for testing *(mset)*,
+* number of features randomly choosen for each *submodel* *(nfeatures)*,
+* a name of y column in train data set *(ycolname)*,
+* a train dataset *(data)*.
+
+The **predicting function** expects to be parametrized with:
+
+* a trained ensemble classifier object of type returned by the training function *(object)*,
+* a test dataset *(newdata)*,
+* a type of outputted prediction - currently only *class* type is supported *(type)*.
+```{r Load ensemble sources}
 source('./R/ensemble.R')
 source('./R/predict.ensemble.R')
 source('./R/onehot.encode.R')
-source('./R/train.and.test.R')
+```
 
-# load datasets sources
+Soon after, the scripts for cleaning and loading experimental data sets should be loaded. Since we are using models which are not affected by unnormalized data normalization process is not performed by the scripts.
+```{r Load datasets sources }
 source('./R/datasets/covtype.R')
 source('./R/datasets/default-of-credit-card-clients.R')
 source('./R/datasets/letter-recognition.R')
+```
 
-set.seed(1234)
+In order to ease experience of executing our model for different sets of parameters we prepared a function which can be parametrized with sets of parameters for executing the **training function**, then it prepares a cross product of all sets, trains the model for every configuration and logs results to the *logs* directory. For each configuration the following metadata is logged:
 
+* training execution time,
+* testing execution time,
+* accuracy score,
+* F1 score.
+
+Based on those statistics we will try to asses how well each model performs and compare it with the baseline (*bagging*, *randomForest*).
+
+```{r Load helper sources}
+source('./R/train.and.test.R')
+```
+
+Let's prepare now a function which will use the above described mechanism for a set of choosen simple model configurations.
+We decided to try three rpart-based (*standard*, *complex*, *simple*) and three naiveBayes-based ensemble classifiers (*standard*, *1.0 Laplace smoothing*, *10.0 Laplace smoothing*).
+
+```{r Train & Test models for data set}
 train_and_test_set <- function(df, df_name, ycolname) {
   # rpart
-  rpart_fun <- function(formula, data) rpart(formula, data=data)
+  rpart_fun <- function(formula, data) rpart(formula, data = data)
   train_and_test_ensemble(df, df_name, rpart_fun, 'rpart', ycolname)
   
   # more complex
-  rpart_cms10_ccp1_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=10, cp=1))
-  train_and_test_ensemble(df, df_name, rpart_cms10_ccp1_fun, 'rpart_cms10_ccp1', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  rpart_cms10_ccp1_fun <- function(formula, data) rpart(
+    formula,
+    data = data,
+    control = rpart.control(minsplit = 10, cp = 1))
+  train_and_test_ensemble(df, df_name,
+                          rpart_cms10_ccp1_fun, 'rpart_cms10_ccp1', ycolname,
+                          bag_nsets = c(10, 100), bag_nfeatures = c(3, 7))
   
   # less complex
-  rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=30, cp=0.001, maxdepth=15))
-  train_and_test_ensemble(df, df_name, rpart_cms30_ccp0.001_cmd15_fun, 'rpart_cms30_ccp0001_cmd15', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data) rpart(
+    formula,
+    data = data,
+    control = rpart.control(minsplit = 30, cp = 0.001, maxdepth = 15))
+  train_and_test_ensemble(df, df_name,
+                          rpart_cms30_ccp0.001_cmd15_fun, 'rpart_cms30_ccp0001_cmd15', ycolname,
+                          bag_nsets = c(10, 100), bag_nfeatures = c(3, 7))
   
   # naiveBayes
-  naiveBayes_fun <- function(formula, data) naiveBayes(formula, data=data)
-  train_and_test_ensemble(df, df_name, naiveBayes_fun, 'naivebayes', ycolname)
+  naiveBayes_fun <- function(formula, data) naiveBayes(
+    formula,
+    data = data)
+  train_and_test_ensemble(df, df_name,
+                          naiveBayes_fun, 'naivebayes', ycolname)
   
   # natural Laplace smoothing
-  naiveBayes_l1_fun <- function(formula, data) naiveBayes(formula, data=data, laplace=1.0)
-  train_and_test_ensemble(df, df_name, naiveBayes_l1_fun, 'naivebayes_l1', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  naiveBayes_l1_fun <- function(formula, data) naiveBayes(
+    formula,
+    data = data,
+    laplace = 1.0)
+  train_and_test_ensemble(df, df_name,
+                          naiveBayes_l1_fun, 'naivebayes_l1', ycolname,
+                          bag_nsets = c(10, 100), bag_nfeatures = c(3, 7))
   
   # Laplace smoothing with higher alpha
-  naiveBayes_l10_fun <- function(formula, data) naiveBayes(formula, data=data, laplace=10.0)
-  train_and_test_ensemble(df, df_name, naiveBayes_l10_fun, 'naivebayes_l10', ycolname, bag_nsets=c(10, 100), bag_nfeatures=c(3, 7))
+  naiveBayes_l10_fun <- function(formula, data) naiveBayes(
+    formula,
+    data = data,
+    laplace = 10.0)
+  train_and_test_ensemble(df, df_name,
+                          naiveBayes_l10_fun, 'naivebayes_l10', ycolname,
+                          bag_nsets = c(10, 100), bag_nfeatures = c(3, 7))
   
-  # TODO add complex models: randomforest, bagging
+  # randomforest & bagging could be added here but were tested outside of this handbook environment
 }
+```
 
-# letter recognition
+```{r Letter recognition}
 lr_df <- load_lr_df()
 sapply(lr_df, class)
 summary(lr_df)
 train_and_test_set(lr_df, 'lr', 'lettr')
+```
 
+```{r Default of credit card clients}
 # default of credit card clients
 dccc_df <- load_dccc_df()
 sapply(dccc_df, class)
 summary(dccc_df)
 train_and_test_set(dccc_df, 'dccc', 'DEFAULT_PAY')
+```
 
+```{r Cover types}
 # forest cover type
 covtype_df <- load_cr_df()
 sapply(covtype_df, class)
 summary(covtype_df)
-train_and_test_set(covtype_df, 'covtype', 'Cover_Type')
-
+# train_and_test_set(covtype_df, 'covtype', 'Cover_Type')
 ```
 
-```{r}
+```{r Load logs}
 # install.packages('tidyverse')
 # install.packages('dplyr')
 library('tidyverse')
@@ -132,7 +204,9 @@ library('dplyr')
 log_filenames <- dir('log') %>% map(function(f) paste0('log/', f))
 log_colnames <- c('df_name', 'submodel_name', 'nsets', 'mset', 'nfeatures', 'train_time', 'test_time', 'accuracy', 'f1_score')
 log_df <- do.call(rbind, lapply(log_filenames, function(f) read.table(f, header = FALSE, sep = '|', col.names = log_colnames)))
+```
 
+```{r Overall accuracy and f1_score for each model}
 # overall accuracy and f1_score for each model
 log_df %>% group_by(submodel_name) %>% summarise(train_time = mean(train_time), test_time = mean(test_time), accuracy = mean(accuracy), f1_score = mean(f1_score)) %>% arrange(desc(f1_score))
 ```
