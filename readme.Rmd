@@ -114,7 +114,7 @@ train_and_test_bagging<- function(df, df_name, ycolname) {
   classifier_funct <- function( data, nsets, mset, nfeatures, ycolname,xcolnames, formula, submodel_funct){
       bagging(data=data, formula=formula, nbagg=nsets, ns = mset)
   }
-  train_and_test(df, df_name, ycolname, 'bagging', clasificator_funct, "library('ipred')")
+  train_and_test(df, df_name, ycolname, 'bagging', classifier_funct, "library('ipred')")
 }
 
 train_and_test_randomforest<- function(df, df_name, ycolname, rpart_funct) {
