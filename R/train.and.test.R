@@ -1,6 +1,5 @@
-train_and_test<- function(df, df_name, ycolname, submodel_name, classifier_funct, source_name, submodel_funct,
-                          nrep=10, model_nset=c(1, 3, 10, 30, 100), model_mset=c(1000), model_nfeatures=c(2, 3, 5, 7)) {
-  eval(parse(text = paste0(source_name)))
+train_and_test<- function(df, df_name, ycolname, submodel_name, classifier_funct, submodel_funct,
+                          nrep=10, model_nset=c(1, 3, 10, 30, 100), model_mset=c(1000), model_nfeatures=c(2, 3, 5, 7)){
   log_file <- paste(c('log/', df_name, '.log'), collapse='')
   log_items <- read.table(log_file, header=FALSE, sep='|',
                           col.names=c('df_name', 'submodel_name', 'nsets', 'mset', 'nfeatures', 'train_time', 'test_time', 'accuracy', 'f1_score'))
@@ -12,7 +11,7 @@ train_and_test<- function(df, df_name, ycolname, submodel_name, classifier_funct
   train <- df[train_i, ]
   test <- df[-train_i, ]
   
-  if(source_name == "library('ipred')"){
+  if(submodel_name == "bagging"){
     model_nfeatures <- c(0) # to avoid unnecessary loops when parameter is not used
   }
   
