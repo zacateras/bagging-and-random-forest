@@ -137,47 +137,41 @@ train_and_test_ensemble <- function(df, df_name, ycolname) {
   rpart_fun <- function(formula, data)
     rpart(formula, data = data)
   train_and_test(df, df_name, ycolname,
-                 'rpart', classifier_funct,
-                 "source('./R/predict.ensemble.R')", rpart_fun) 
+                 'rpart', classifier_funct, rpart_fun) 
   
   # more complex
   rpart_cms10_ccp1_fun <- function(formula, data)
     rpart(formula, data = data, control = rpart.control(minsplit = 10, cp = 1))
   
   train_and_test(df, df_name, ycolname,
-                 'rpart_cms10_ccp1', classifier_funct,
-                 "source('./R/predict.ensemble.R')", rpart_cms10_ccp1_fun,
+                 'rpart_cms10_ccp1', classifier_funct, rpart_cms10_ccp1_fun,
                  model_nset = c(10, 100), model_nfeatures = c(3, 7)) 
   
   # less complex
   rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data)
     rpart(formula, data = data, control = rpart.control(minsplit = 30, cp = 0.001, maxdepth = 15))
   train_and_test(df, df_name, ycolname,
-                 'rpart_cms30_ccp0001_cmd15', classifier_funct,
-                 "source('./R/predict.ensemble.R')", rpart_cms30_ccp0.001_cmd15_fun,
+                 'rpart_cms30_ccp0001_cmd15', classifier_funct, rpart_cms30_ccp0.001_cmd15_fun,
                  model_nset = c(10, 100), model_nfeatures = c(3, 7)) 
   
   # naiveBayes
   naiveBayes_fun <- function(formula, data)
     naiveBayes(formula, data=data)
   train_and_test(df, df_name, ycolname,
-                 'naivebayes', classifier_funct,
-                 "source('./R/predict.ensemble.R')", naiveBayes_fun) 
+                 'naivebayes', classifier_funct, naiveBayes_fun) 
   
   # natural Laplace smoothing
   naiveBayes_l1_fun <- function(formula, data)
     naiveBayes(formula, data = data, laplace = 1.0)
   train_and_test(df, df_name, ycolname,
-                 'naivebayes_l1', classifier_funct,
-                 "source('./R/predict.ensemble.R')", naiveBayes_l1_fun,
+                 'naivebayes_l1', classifier_funct, naiveBayes_l1_fun,
                  model_nset = c(10, 100), model_nfeatures = c(3, 7)) 
   
   # Laplace smoothing with higher alpha
   naiveBayes_l10_fun <- function(formula, data)
     naiveBayes(formula, data=data, laplace=10.0)
   train_and_test(df, df_name, ycolname,
-                 'naivebayes_l10', classifier_funct, 
-                 "source('./R/predict.ensemble.R')", naiveBayes_l10_fun,
+                 'naivebayes_l10', classifier_funct, naiveBayes_l10_fun,
                  model_nset = c(10, 100), model_nfeatures = c(3, 7))
 }
 ```
@@ -191,8 +185,7 @@ train_and_test_bagging <- function(df, df_name, ycolname) {
             nbagg = nsets, ns = mset)
   }
   
-  train_and_test(df, df_name, ycolname, 'bagging',
-                 classifier_funct, "library('ipred')")
+  train_and_test(df, df_name, ycolname, 'bagging', classifier_funct)
 }
 ```
 
@@ -207,8 +200,7 @@ train_and_test_randomforest <- function(df, df_name, ycolname, rpart_funct) {
   }
   
   train_and_test(df, df_name, ycolname,
-                 'randomForest', randomForest_fun,
-                 "library('randomForest')")
+                 'randomForest', randomForest_fun)
     
   # minimum node size
   randomForest_ns10_func <- function(data, nsets, mset, nfeatures,
@@ -220,8 +212,7 @@ train_and_test_randomforest <- function(df, df_name, ycolname, rpart_funct) {
   }
   
   train_and_test(df, df_name, ycolname,
-                 'randomForest', randomForest_ns10_func,
-                 "library('randomForest')")
+                 'randomForest', randomForest_ns10_func)
 
   # sampling with replacement
   randomForest_r1_func <- function(data, nsets, mset, nfeatures,
@@ -233,8 +224,7 @@ train_and_test_randomforest <- function(df, df_name, ycolname, rpart_funct) {
   }
   
   train_and_test(df, df_name, ycolname,
-                 'randomForest', randomForest_r1_func,
-                 "library('randomForest')")
+                 'randomForest', randomForest_r1_func)
 }
 ```
 
