@@ -119,55 +119,70 @@ Let's prepare now a function which will use the above described mechanism for a 
 We decided to try three rpart-based (*standard*, *complex*, *simple*) and three naiveBayes-based ensemble classifiers (*standard*, *1.0 Laplace smoothing*, *10.0 Laplace smoothing*).
 
 ```{r Train & Test models for data set}
-train_and_test_set <- function(df, df_name, ycolname) {
+
+train_and_test_ensemble <- function(df, df_name, ycolname) {
+  classifier_funct <- function(data,  nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct, replace, node_size){
+      ensemble(
+        model = submodel_funct,
+        nsets=nsets,
+        mset=mset,
+        nfeatures=nfeatures,
+        ycolname=ycolname,
+        data=data)
+  }
   # rpart
-  rpart_fun <- function(formula, data) rpart(formula, data = data)
-  train_and_test_ensemble(df, df_name, rpart_fun, 'rpart', ycolname)
+  rpart_fun <- function(formula, data) rpart(formula, data=data)
+  train_and_test(df, df_name, ycolname, 'rpart', classifier_funct, "source('./R/predict.ensemble.R')", rpart_fun) 
   
   # more complex
-  rpart_cms10_ccp1_fun <- function(formula, data) rpart(
-    formula,
-    data = data,
-    control = rpart.control(minsplit = 10, cp = 1))
-  train_and_test_ensemble(df, df_name,
-                          rpart_cms10_ccp1_fun, 'rpart_cms10_ccp1', ycolname,
-                          bag_nsets = c(10, 100), bag_nfeatures = c(3, 7))
+  rpart_cms10_ccp1_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=10, cp=1))
+  
+  train_and_test(df, df_name, ycolname, 'rpart_cms10_ccp1', classifier_funct, "source('./R/predict.ensemble.R')", rpart_cms10_ccp1_fun, model_nset=c(10, 100), model_nfeatures=c(3, 7)) 
   
   # less complex
-  rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data) rpart(
-    formula,
-    data = data,
-    control = rpart.control(minsplit = 30, cp = 0.001, maxdepth = 15))
-  train_and_test_ensemble(df, df_name,
-                          rpart_cms30_ccp0.001_cmd15_fun, 'rpart_cms30_ccp0001_cmd15', ycolname,
-                          bag_nsets = c(10, 100), bag_nfeatures = c(3, 7))
+  rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=30, cp=0.001, maxdepth=15))
+  train_and_test(df, df_name, ycolname, 'rpart_cms30_ccp0001_cmd15', classifier_funct, "source('./R/predict.ensemble.R')", rpart_cms30_ccp0.001_cmd15_fun, model_nset=c(10, 100), model_nfeatures=c(3, 7)) 
   
   # naiveBayes
-  naiveBayes_fun <- function(formula, data) naiveBayes(
-    formula,
-    data = data)
-  train_and_test_ensemble(df, df_name,
-                          naiveBayes_fun, 'naivebayes', ycolname)
+  naiveBayes_fun <- function(formula, data) naiveBayes(formula, data=data)
+  train_and_test(df, df_name, ycolname, 'naivebayes', classifier_funct, "source('./R/predict.ensemble.R')", naiveBayes_fun) 
   
   # natural Laplace smoothing
-  naiveBayes_l1_fun <- function(formula, data) naiveBayes(
-    formula,
-    data = data,
-    laplace = 1.0)
-  train_and_test_ensemble(df, df_name,
-                          naiveBayes_l1_fun, 'naivebayes_l1', ycolname,
-                          bag_nsets = c(10, 100), bag_nfeatures = c(3, 7))
+  naiveBayes_l1_fun <- function(formula, data) naiveBayes(formula, data=data, laplace=1.0)
+  train_and_test(df, df_name, ycolname, 'naivebayes_l1', classifier_funct, "source('./R/predict.ensemble.R')", naiveBayes_l1_fun, model_nset=c(10, 100), model_nfeatures=c(3, 7)) 
   
   # Laplace smoothing with higher alpha
-  naiveBayes_l10_fun <- function(formula, data) naiveBayes(
-    formula,
-    data = data,
-    laplace = 10.0)
-  train_and_test_ensemble(df, df_name,
-                          naiveBayes_l10_fun, 'naivebayes_l10', ycolname,
-                          bag_nsets = c(10, 100), bag_nfeatures = c(3, 7))
+  naiveBayes_l10_fun <- function(formula, data) naiveBayes(formula, data=data, laplace=10.0)
+  train_and_test(df, df_name, ycolname, 'naivebayes_l10', classifier_funct, "source('./R/predict.ensemble.R')", naiveBayes_l10_fun, model_nset=c(10, 100), model_nfeatures=c(3, 7))
   
-  # randomforest & bagging could be added here but were tested outside of this handbook environment
+}
+
+train_and_test_bagging<- function(df, df_name, ycolname) {
+  classifier_funct <- function(data, nsets, mset, nfeatures, ycolname,xcolnames, formula, submodel_funct){
+      bagging(data=data, formula = formula, nbagg = nsets, ns = mset)
+  }
+  
+  train_and_test(df, df_name, ycolname, 'bagging', classifier_funct, "library('ipred')")
+}
+
+train_and_test_randomforest<- function(df, df_name, ycolname, rpart_funct) {
+  randomForest_fun <- function( data, nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct){
+    randomForest( x=data[,xcolnames], y=data[,ycolname], ntree=nsets, mtry=nfeatures, sampsize = mset)
+  }
+  
+  train_and_test(df, df_name, ycolname,'randomForest', randomForest_fun,"library('randomForest')")
+    
+  #minimum node size
+  randomForest_ns10_func <- function( data, nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct){
+    randomForest( x=data[,xcolnames], y=data[,ycolname], ntree=nsets, mtry=nfeatures, sampsize = mset, nodesize = 10)
+  }
+  train_and_test(df, df_name, ycolname,'randomForest', randomForest_ns10_func,"library('randomForest')")
+
+  #sampling with replacement
+  randomForest_r1_func <- function( data, nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct){
+    randomForest( x=data[,xcolnames], y=data[,ycolname], ntree=nsets, mtry=nfeatures, sampsize = mset, replace = 1)
+  }
+  train_and_test(df, df_name, ycolname,'randomForest', randomForest_r1_func,"library('randomForest')")
 }
 ```
 
@@ -175,23 +190,27 @@ train_and_test_set <- function(df, df_name, ycolname) {
 lr_df <- load_lr_df()
 sapply(lr_df, class)
 summary(lr_df)
-train_and_test_set(lr_df, 'lr', 'lettr')
+# train_and_test_ensemble(lr_df, 'lr', 'lettr')
+# train_and_test_bagging(lr_df, 'lr', 'lettr')
+# train_and_test_randomforest(lr_df, 'lr', 'lettr')
 ```
 
 ```{r Default of credit card clients}
-# default of credit card clients
 dccc_df <- load_dccc_df()
 sapply(dccc_df, class)
 summary(dccc_df)
-train_and_test_set(dccc_df, 'dccc', 'DEFAULT_PAY')
+# train_and_test_ensemble(dccc_df, 'dccc', 'DEFAULT_PAY')
+# train_and_test_bagging(dccc_df, 'dccc', 'DEFAULT_PAY')
+# train_and_test_randomforest(dccc_df, 'dccc', 'DEFAULT_PAY')
 ```
 
 ```{r Cover types}
-# forest cover type
 covtype_df <- load_cr_df()
 sapply(covtype_df, class)
 summary(covtype_df)
-# train_and_test_set(covtype_df, 'covtype', 'Cover_Type')
+# train_and_test_ensemble(covtype_df, 'covtype', 'Cover_Type')
+# train_and_test_bagging(covtype_df, 'covtype', 'Cover_Type')
+# train_and_test_randomforest(covtype_df, 'covtype', 'Cover_Type')
 ```
 
 ```{r Load logs}

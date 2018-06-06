@@ -1,8 +1,6 @@
-train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, ycolname, nrep=10, 
-                                    bag_nsets=c(1, 3, 10, 30, 100), bag_mset=c(100, 1000, 10000), bag_nfeatures=c(2, 3, 5, 7)) {
-  source('./R/ensemble.R')
-  source('./R/predict.ensemble.R')
-  
+train_and_test<- function(df, df_name, ycolname, submodel_name, classifier_funct, source_name, submodel_funct,
+                          nrep=10, model_nset=c(1, 3, 10, 30, 100), model_mset=c(1000), model_nfeatures=c(2, 3, 5, 7)) {
+  eval(parse(text = paste0(source_name)))
   log_file <- paste(c('log/', df_name, '.log'), collapse='')
   log_items <- read.table(log_file, header=FALSE, sep='|',
                           col.names=c('df_name', 'submodel_name', 'nsets', 'mset', 'nfeatures', 'train_time', 'test_time', 'accuracy', 'f1_score'))
@@ -14,9 +12,13 @@ train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, yc
   train <- df[train_i, ]
   test <- df[-train_i, ]
   
-  for (nsets in bag_nsets) {
-    for (mset in bag_mset) {
-      for (nfeatures in bag_nfeatures) {
+  if(source_name == "library('ipred')"){
+    model_nfeatures <- c(0) # to avoid unnecessary loops when parameter is not used
+  }
+  
+  for (nsets in model_nset) {
+    for (mset in model_mset) {
+      for (nfeatures in model_nfeatures) {
         key <- c(df_name, submodel_name, nsets, mset, nfeatures)
         key_string <- paste(key, collapse='_')
 
@@ -31,16 +33,12 @@ train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, yc
         f1_score <- 0
         f1_score_nan <- 0
   
+        xcolnames <- colnames(train)[colnames(train) != ycolname]
+        formula <- as.formula(paste(ycolname, '~', paste(xcolnames, collapse='+')))
         for (i in 1:nrep) {
           print(paste('Training classifier ', key_string, ' (', i, '/', nrep, ')...', collapse=''))
           train_time <- train_time + system.time({
-            classifier <- ensemble(
-              submodel_fun,
-              nsets=nsets,
-              mset=mset,
-              nfeatures=nfeatures,
-              ycolname=ycolname,
-              data=train)
+            classifier <- classifier_funct(train, nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct)
           })[['user.self']]
   
           print(paste('Testing classifier', key_string, ' (', i, '/', nrep, ')...', collapse=''))
@@ -77,7 +75,8 @@ train_and_test_ensemble <- function(df, df_name, submodel_fun, submodel_name, yc
             test_time=test_time,
             accuracy=accuracy,
             f1_score=f1_score),
-          file=log_file, append=TRUE, quote=FALSE, sep='|', col.names=FALSE, row.names=FALSE)
+          file=log_file, append=TRUE, quote=FALSE, sep='|', col.names=FALSE, row.names=FALSE
+        )
       }
     }
   }
