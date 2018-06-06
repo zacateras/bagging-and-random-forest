@@ -118,71 +118,123 @@ source('./R/train.and.test.R')
 Let's prepare now a function which will use the above described mechanism for a set of choosen simple model configurations.
 We decided to try three rpart-based (*standard*, *complex*, *simple*) and three naiveBayes-based ensemble classifiers (*standard*, *1.0 Laplace smoothing*, *10.0 Laplace smoothing*).
 
-```{r Train & Test models for data set}
-
+```{r Train & Test ensemble models for data set}
 train_and_test_ensemble <- function(df, df_name, ycolname) {
-  classifier_funct <- function(data,  nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct, replace, node_size){
+  classifier_funct <- function(
+    data, nsets, mset, nfeatures,
+    ycolname, xcolnames, formula,
+    submodel_funct, replace, node_size) {
       ensemble(
         model = submodel_funct,
-        nsets=nsets,
-        mset=mset,
-        nfeatures=nfeatures,
-        ycolname=ycolname,
-        data=data)
+        nsets = nsets,
+        mset = mset,
+        nfeatures = nfeatures,
+        ycolname = ycolname,
+        data = data)
   }
+  
   # rpart
-  rpart_fun <- function(formula, data) rpart(formula, data=data)
-  train_and_test(df, df_name, ycolname, 'rpart', classifier_funct, "source('./R/predict.ensemble.R')", rpart_fun) 
+  rpart_fun <- function(formula, data)
+    rpart(formula, data = data)
+  train_and_test(df, df_name, ycolname,
+                 'rpart', classifier_funct,
+                 "source('./R/predict.ensemble.R')", rpart_fun) 
   
   # more complex
-  rpart_cms10_ccp1_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=10, cp=1))
+  rpart_cms10_ccp1_fun <- function(formula, data)
+    rpart(formula, data = data, control = rpart.control(minsplit = 10, cp = 1))
   
-  train_and_test(df, df_name, ycolname, 'rpart_cms10_ccp1', classifier_funct, "source('./R/predict.ensemble.R')", rpart_cms10_ccp1_fun, model_nset=c(10, 100), model_nfeatures=c(3, 7)) 
+  train_and_test(df, df_name, ycolname,
+                 'rpart_cms10_ccp1', classifier_funct,
+                 "source('./R/predict.ensemble.R')", rpart_cms10_ccp1_fun,
+                 model_nset = c(10, 100), model_nfeatures = c(3, 7)) 
   
   # less complex
-  rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data) rpart(formula, data=data, control=rpart.control(minsplit=30, cp=0.001, maxdepth=15))
-  train_and_test(df, df_name, ycolname, 'rpart_cms30_ccp0001_cmd15', classifier_funct, "source('./R/predict.ensemble.R')", rpart_cms30_ccp0.001_cmd15_fun, model_nset=c(10, 100), model_nfeatures=c(3, 7)) 
+  rpart_cms30_ccp0.001_cmd15_fun <- function(formula, data)
+    rpart(formula, data = data, control = rpart.control(minsplit = 30, cp = 0.001, maxdepth = 15))
+  train_and_test(df, df_name, ycolname,
+                 'rpart_cms30_ccp0001_cmd15', classifier_funct,
+                 "source('./R/predict.ensemble.R')", rpart_cms30_ccp0.001_cmd15_fun,
+                 model_nset = c(10, 100), model_nfeatures = c(3, 7)) 
   
   # naiveBayes
-  naiveBayes_fun <- function(formula, data) naiveBayes(formula, data=data)
-  train_and_test(df, df_name, ycolname, 'naivebayes', classifier_funct, "source('./R/predict.ensemble.R')", naiveBayes_fun) 
+  naiveBayes_fun <- function(formula, data)
+    naiveBayes(formula, data=data)
+  train_and_test(df, df_name, ycolname,
+                 'naivebayes', classifier_funct,
+                 "source('./R/predict.ensemble.R')", naiveBayes_fun) 
   
   # natural Laplace smoothing
-  naiveBayes_l1_fun <- function(formula, data) naiveBayes(formula, data=data, laplace=1.0)
-  train_and_test(df, df_name, ycolname, 'naivebayes_l1', classifier_funct, "source('./R/predict.ensemble.R')", naiveBayes_l1_fun, model_nset=c(10, 100), model_nfeatures=c(3, 7)) 
+  naiveBayes_l1_fun <- function(formula, data)
+    naiveBayes(formula, data = data, laplace = 1.0)
+  train_and_test(df, df_name, ycolname,
+                 'naivebayes_l1', classifier_funct,
+                 "source('./R/predict.ensemble.R')", naiveBayes_l1_fun,
+                 model_nset = c(10, 100), model_nfeatures = c(3, 7)) 
   
   # Laplace smoothing with higher alpha
-  naiveBayes_l10_fun <- function(formula, data) naiveBayes(formula, data=data, laplace=10.0)
-  train_and_test(df, df_name, ycolname, 'naivebayes_l10', classifier_funct, "source('./R/predict.ensemble.R')", naiveBayes_l10_fun, model_nset=c(10, 100), model_nfeatures=c(3, 7))
-  
+  naiveBayes_l10_fun <- function(formula, data)
+    naiveBayes(formula, data=data, laplace=10.0)
+  train_and_test(df, df_name, ycolname,
+                 'naivebayes_l10', classifier_funct, 
+                 "source('./R/predict.ensemble.R')", naiveBayes_l10_fun,
+                 model_nset = c(10, 100), model_nfeatures = c(3, 7))
 }
+```
 
-train_and_test_bagging<- function(df, df_name, ycolname) {
-  classifier_funct <- function(data, nsets, mset, nfeatures, ycolname,xcolnames, formula, submodel_funct){
-      bagging(data=data, formula = formula, nbagg = nsets, ns = mset)
+```{r Train & Test bagging models for data set}
+train_and_test_bagging <- function(df, df_name, ycolname) {
+  classifier_funct <- function(data, nsets, mset, nfeatures,
+                               ycolname, xcolnames, formula,
+                               submodel_funct) {
+    bagging(data = data, formula = formula,
+            nbagg = nsets, ns = mset)
   }
   
-  train_and_test(df, df_name, ycolname, 'bagging', classifier_funct, "library('ipred')")
+  train_and_test(df, df_name, ycolname, 'bagging',
+                 classifier_funct, "library('ipred')")
 }
+```
 
-train_and_test_randomforest<- function(df, df_name, ycolname, rpart_funct) {
-  randomForest_fun <- function( data, nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct){
-    randomForest( x=data[,xcolnames], y=data[,ycolname], ntree=nsets, mtry=nfeatures, sampsize = mset)
+```{r Train & Test randomForest models for data set}
+train_and_test_randomforest <- function(df, df_name, ycolname, rpart_funct) {
+  randomForest_fun <- function(data, nsets, mset, nfeatures,
+                               ycolname, xcolnames, formula,
+                               submodel_funct) {
+    randomForest(x = data[, xcolnames], y = data[, ycolname],
+                 ntree = nsets, mtry = nfeatures,
+                 sampsize = mset)
   }
   
-  train_and_test(df, df_name, ycolname,'randomForest', randomForest_fun,"library('randomForest')")
+  train_and_test(df, df_name, ycolname,
+                 'randomForest', randomForest_fun,
+                 "library('randomForest')")
     
-  #minimum node size
-  randomForest_ns10_func <- function( data, nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct){
-    randomForest( x=data[,xcolnames], y=data[,ycolname], ntree=nsets, mtry=nfeatures, sampsize = mset, nodesize = 10)
+  # minimum node size
+  randomForest_ns10_func <- function(data, nsets, mset, nfeatures,
+                                     ycolname, xcolnames, formula,
+                                     submodel_funct) {
+    randomForest(x = data[, xcolnames], y = data[, ycolname],
+                 ntree = nsets, mtry = nfeatures,
+                 sampsize = mset, nodesize = 10)
   }
-  train_and_test(df, df_name, ycolname,'randomForest', randomForest_ns10_func,"library('randomForest')")
+  
+  train_and_test(df, df_name, ycolname,
+                 'randomForest', randomForest_ns10_func,
+                 "library('randomForest')")
 
-  #sampling with replacement
-  randomForest_r1_func <- function( data, nsets, mset, nfeatures, ycolname, xcolnames, formula, submodel_funct){
-    randomForest( x=data[,xcolnames], y=data[,ycolname], ntree=nsets, mtry=nfeatures, sampsize = mset, replace = 1)
+  # sampling with replacement
+  randomForest_r1_func <- function(data, nsets, mset, nfeatures,
+                                   ycolname, xcolnames, formula,
+                                   submodel_funct) {
+    randomForest(x = data[, xcolnames], y = data[, ycolname],
+                 ntree = nsets, mtry = nfeatures,
+                 sampsize = mset, replace = 1)
   }
-  train_and_test(df, df_name, ycolname,'randomForest', randomForest_r1_func,"library('randomForest')")
+  
+  train_and_test(df, df_name, ycolname,
+                 'randomForest', randomForest_r1_func,
+                 "library('randomForest')")
 }
 ```
 
