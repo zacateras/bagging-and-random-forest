@@ -310,7 +310,26 @@ log_df_agg %>% group_by(submodel_name) %>% summarise(train_time = mean(train_tim
 
 The performance gap seems to be significantly lower than in the previous example. rpart ensemble seems to be performing surprisingly good for credit card defaults data.
 
-##### Details
+#### Details
+We tried to investigate the results in depth by plotting and analyzing a few of available log profiles.
+
+For instance, in the following figures we can observe an obvious positive corrlation between accuracy or F1 score and the number of submodels in the ensemble. For *randomForest* the nsets number is considered as the number of trees used. For *bagging* - number of bag samples.
+
+![](assets/dccc_m1000_k5_n-all_acc.png){ width=49% }
+![](assets/dccc_m1000_k5_n-all_f1.png){ width=49% }
+
+Generally, all models for DCCC and LR datasets tend to behave better if we include more features in training phase. This is easily noticable in the next four figures.
+
+![](assets/dccc_naivebayes_m1000_n-k_f1.png){ width=49% }
+![](assets/dccc_rpart_m1000_n-k_f1.png){ width=49% }
+![](assets/lr_naivebayes_m1000_n-k_f1.png){ width=49% }
+![](assets/lr_randomForest_m1000_n-k_f1.png){ width=49% }
+
+All prepared plots can be found in the *'assets'* folder of this repository.
+
+### Conclusion
+
+We succedeed on the project goal which was to implement a generic ensemble solution. The developed package can be used in the future in rapid prototyping of simple ensemble models, using different kernel models. What is more, for certin results, our implementation performed nearly as good as the baseline. We also confirmed our early assumption, that generally increasing the value of the defined parameters: **n, m, k** increases the overall performance of the model.
 
 ### References
 
