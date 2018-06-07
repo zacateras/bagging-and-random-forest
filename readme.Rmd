@@ -22,38 +22,38 @@ The main goal of the assignment is briefly summarized in the subject of this pap
 
 ![](./assets/scheme.png)
 
-First datasets will be splitted into training and testing parts. We will probably go with very natural 80 / 20 ratio.
+First datasets will is splitted into training and testing parts. We will probably go with very natural 80 / 20 ratio.
 
-Next we will start building our complex classifier. Depending on the algorithm parameter values, N independent dataset samples will be generated, each of parametrized quantity M. In order to choose observations for samples, simple draw with returning algorithm will be used. For each sample a random subset of K features will be taken. Having all that bootstrapped we will train a model C N times on all prepared sample datasets. The combined classifier will make predictions for all pre-trained models and output the most frequent prediction as the final one.
+Next we start building our complex classifier. Depending on the algorithm parameter values, N independent dataset samples will be choosen from the train set, each of parametrized **quantity M**. In order to choose observations for samples, a simple draw with returning algorithm is used. For each sample a random subset of **K features** is taken. Having all that bootstrapped we will train a model C N times on all prepared sample datasets. The combined classifier makes predictions for all pre-trained models - it is assumed that all submodels output one value with a predicted class. For each output a predicted class is onehot encoded. All predictions are summed. Based on a constructed vector of class prediction frequencies, an ensemble classifier outputs its prediction by taking the most frequent class as the final one.
 
-Various simple internal models can be considered. We will choose just a few simple already implemented packages and integrate them into the core of the algorithm:
+Various simple models can be considered as a kernel for our ensemble. We choose just a few simple, already implemented packages and integrated them into the core of the algorithm:
 
 * Recursive Partitioning - The algorithm creates a single decision tree, that tries to correctly classify members of the population by splitting it into sub-populations (through each of tree internal nodes) based on several independent variables. However, it does not perform well for continuous data, thus discretization can be needed. The implementation is available as a part of rpart or ctree CRAN packages.
 * Naive Bayes - The classifier is based on a simple probabilistic theorem called the Bayesian theorem. An application is based on an assumption that the features of an observation contribute independently to the probability of classifying it to a certain class, regardless of any possible correlations between them. This does not happen very often, so the classifier is likely to not perform very well. The algorithm is implemented in e1071 CRAN package. 
 
-To create models with the *naiveBayes* and *rpart* functions we will only need formula containing arguments to predict from and training data set.
+To create models with the *naiveBayes* and *rpart* functions we require only the formula containing arguments to predict from and the training data set.
 
-If it will be possible, our implementation will provide an interface for passing metaparameters for its internal models. The space of different parameter values will be evaluated in order to find an optimal combination.
+Our implementation allows any kind of parametrization of the submodels with their metaparameters. The specifics of the proposed interfaces as well as our suggestions for changes in metaconfiguration of the submodels is more deeply discussed in the *Experiments* section.
 
 ### Data Sets
 To do some testing we agreed on using three different data sets available in the UCI repository. They are as follows:
 
-* Cover Type - Data set with information about forests and their surroundings.  Each record belongs to the one of 7 cover types and has 14 attributes like distance to hydrology and roadways, slope in degrees, elevation in meters and soil type. The soil type is determined by 40 binary variables indicating whether the soil belongs to a given class. During the experiment we will consider a conversion of the mentioned columns into one with 40 possible values each dedicated to the one soil type.
-* Letter recognition –  describes images of capital Latin letters in 16 numerical attributes (mainly statistical moments) which were scaled into integer values from 0 to 15. We will build models deciding what letter an image contains.
+* Cover Type - Data set with information about forests and their surroundings. Each record belongs to the one of 7 cover types and has 14 attributes like distance to hydrology and roadways, slope in degrees, elevation in meters and soil type. The soil type is determined by 40 binary variables indicating whether the soil belongs to a given class. During the experiment we will consider a conversion of the mentioned columns into one with 40 possible values each dedicated to the one soil type.
+* Letter recognition –describes images of capital Latin letters in 16 numerical attributes (mainly statistical moments) which were scaled into integer values from 0 to 15. We will build models deciding what letter an image contains.
 * Default of credit card clients - contains information about bank clients such as gender, education, payment history and bill statement. During the experiment we will predict if a client has a default payment in current month.  The class distribution of given records is not symmetrical(ratio 1:4), we will check whether the aliment of classes proportions in training data improves the models’ effectiveness.
 
 ### Other algorithms
-As a counterexample we will take some other complex classification algorithms and try to evaluate them on the same data (the same datasets, the same cleaning applied) as we will evaluate our implementation. We will try:
+As a counterexample we take some other complex classification algorithms and evaluate them on the same data (the same datasets, the same cleaning applied) as we evaluate our implementation. We tried:
 
-* Bagging (bootstrap aggregating) - ensemble learning method very similar to the one that we are going to implement. We will use ipred CRAN package with following arguments: number of bagging replication and number of sample to draw from the learning sample (if small algorithm uses sampling without replacement). Since this is meta-classification algorithm without any specific kernel defined we can use the same as for our implementation or try some different formulas.
+* Bagging (bootstrap aggregating) - ensemble learning method very similar to the one that we are going to implement. We use ipred CRAN package with following arguments: number of bagging replication and number of sample to draw from the learning sample (if small algorithm uses sampling without replacement). Since this is meta-classification algorithm without any specific kernel defined we can use the same as for our implementation or try some different formulas.
 * Random Forest - another ensemble learning method, based on a recursive partitioning kernel. The algorithm builds a lot of different decision trees (constructed with different parameters). Then the classification decision is based on a decision of all the individual submodels. Normally the mean or mode value is taken. The method can perform significantly better that a single tree, since it reduces overfitting. An implementation from randomForest CRAN package will be used with such arguments as farmula, vector indicating which rows belongs to test set, number of arguments that are choose at each split, numbers of trees to grow and maximum number of terminal nodes.
 
-Suppose that we will have our data cleaned and all our algorithms trained, we will need to compare the performance of them. In order to do so we will use two different metrics:
+Suppose that we have our data cleaned and all our algorithms trained, we need to compare the performance of them. In order to do so we use two different metrics:
 * simple prediction accuracy on a test set value,
 * F1-score - harmonic mean of precission and recall values of a classifier from the interval of [0, 1], where 0 means the worst classifier and 1 means the best (in terms of precission and recall). We can consider calculating it with an external package such as MLmetrics, just for simplicity.
 
 ### Experiments
-We will start experiments section with loading necessary external libraries announced in the proceeding sections:
+We start experiments section with loading necessary external libraries announced in the previous sections:
 ```{r Load external dependencies}
 # install.packages('caret')
 # install.packages('rpart')
@@ -95,7 +95,7 @@ source('./R/predict.ensemble.R')
 source('./R/onehot.encode.R')
 ```
 
-Soon after, the scripts for cleaning and loading experimental, data sets should be loaded. Since we are using models which are not affected by unnormalized data - normalization process is not performed by the scripts.
+Soon after, the scripts for cleaning and loading experimental data sets should be loaded. Since we are using models, which are not affected by unnormalized data - normalization process is not performed by the scripts.
 ```{r Load datasets sources }
 source('./R/datasets/covtype.R')
 source('./R/datasets/default-of-credit-card-clients.R')
@@ -284,7 +284,7 @@ log_df <- do.call(rbind, lapply(log_filenames, function(f)
 ```
 
 ##### Overall
-The following table presents the best models sorted in descending manner by their F1 score averaged over all configurations and all data sets. 
+The following table presents the best models sorted in descending manner by their F1 score, averaged over all configurations and all data sets. 
 ```{r Overall accuracy and f1_score for each model}
 log_df_agg <- log_df
 log_df_agg[str_detect(log_df_agg$submodel_name, 'bagging'),]$submodel_name <- 'bagging'
@@ -293,10 +293,10 @@ log_df_agg[str_detect(log_df_agg$submodel_name, 'naivebayes'),]$submodel_name <-
 log_df_agg[str_detect(log_df_agg$submodel_name, 'rpart'),]$submodel_name <- 'rpart'
 log_df_agg %>% group_by(submodel_name) %>% summarise(train_time = mean(train_time), test_time = mean(test_time), accuracy = mean(accuracy), f1_score = mean(f1_score)) %>% arrange(desc(f1_score))
 ```
-It seams that our ensemble model is not better than native implementations of *randomForest* and *rpart* in terms of accuracy and F1 score.
+It seams that in terms of accuracy and F1 score our ensemble model is not better than native implementations of *randomForest* and *rpart*.
 Noticable difference between training and testing times for *naivebayes* and *rpart* should be pointed here. Interestingly despite the fact that *rpart* was trained much longer it yealds worse scores.
 
-However such aggregated results can quickly estimate general performance of the models over huge space of different configurations it can be very misleading. It can happen that only a few configurations of ensemble worsen the overal score. Let's try to get a bit deeper into generated meta data and try to find any applications where our implementation can be considered better than the baseline.
+However, such aggregated results can quickly estimate general performance of the models over huge space of different configurations it can be very misleading. It can happen that only a few configurations of ensemble worsen the overal score. Let's try to get a bit deeper into generated meta data and try to find any applications where our implementation can be considered better than the baseline.
 
 How about considering the DCCC set only?
 ```{r Dccc accuracy and f1_score for each model, collapse=TRUE}
